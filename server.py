@@ -99,7 +99,7 @@ async def fillForm_preview(form_data: JotForm):
     InspectorName = form_data.InspectorName
     Summary  = form_data.Summary
     try:
-        Summary = re.sub("(\<space>+)|(\Summary:+)", "\n", Summary)
+        Summary = re.sub(r"(\<space>+)|(\Summary:+)", "\n", Summary)
     except Exception:
          pass
 
