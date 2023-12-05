@@ -1,3 +1,4 @@
+import re
 from fastapi import FastAPI, Request, Response
 import uvicorn
 import os, time
@@ -97,6 +98,10 @@ async def fillForm_preview(form_data: JotForm):
     inspectionDateTime = form_data.inspectionDateTime
     InspectorName = form_data.InspectorName
     Summary  = form_data.Summary
+    try:
+        Summary = re.sub("(\<space>+)|(\Summary:+)", "\n", Summary)
+    except Exception:
+         pass
 
     # Send Crawler to perform input on fields
     res = jotform.Fill_Form(url, contact_person, contact_number, street, email, city, loanNumber, state, zip, inspectionDateTime, InspectorName, Summary)
