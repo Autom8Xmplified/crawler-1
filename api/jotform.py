@@ -1,117 +1,72 @@
-import re
-from fastapi import FastAPI, Request, Response
-import uvicorn
-import os, time
-from starlette.middleware import Middleware
-from starlette.middleware.cors import CORSMiddleware
-from pydantic import BaseModel 
-from api import jotform
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.common.exceptions import NoSuchElementException
+import time, base64, os
 
 
-origins = [
-   "*"
-]
+chrome_options = webdriver.ChromeOptions()
+service = Service(executable_path=os.environ.get("CHROMEDRIVER_PATH"))
+chrome_options.binary_location = os.environ.get("GOOGLE_CHROME_BIN")
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.add_argument("--no-sandbox")
+browser = webdriver.Chrome(service=service, options=chrome_options)
 
-middleware = [
-    Middleware(CORSMiddleware, allow_origins=origins,  allow_headers=["*"])
-]
-
-app = FastAPI(middleware=middleware)
-
-ALLOWED_ORIGINS = '*' 
-
-class JotForm(BaseModel):
-    url: str
-    contact_person: str
-    contact_number: str
-    street: str
-    email: str
-    city:str
-    loanNumber: str
-    state: str
-    zip: str
-    inspectionDateTime: str
-    InspectorName: str
-    Summary: str
-
-# handle CORS preflight requests
-@app.options('/*')
-async def preflight_handler(request: Request, rest_of_path: str) -> Response:
-    response = Response()
-    response.headers['Access-Control-Allow-Origin'] = ALLOWED_ORIGINS
-    response.headers['Access-Control-Allow-Methods'] = 'POST, GET, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = '*'
-    return response
-
-# set CORS headers
-@app.middleware("http")
-async def add_CORS_header(request: Request, call_next):
-    response = await call_next(request)
-    response.headers['Access-Control-Allow-Origin'] = ALLOWED_ORIGINS
-    response.headers['Access-Control-Allow-Methods'] = 'POST, GET, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = '*'
-    return response
-
-
-@app.get('/main')
-async def welcome():
-	return "Welcome to API"
-    
-@app.post('/jotform-submit')
-async def fillForm(form_data: JotForm):
-    # Fetch Data
-    url  = form_data.url
-    contact_person = form_data.contact_person
-    contact_number = form_data.contact_number
-    street = form_data.street
-    email  = form_data.email
-    city = form_data.email
-    loanNumber = form_data.loanNumber
-    state = form_data.state
-    zip = form_data.zip
-    inspectionDateTime = form_data.inspectionDateTime
-    InspectorName = form_data.InspectorName
-    Summary  = form_data.Summary
-
-    # Send Crawler to perform input on fields
-    res = jotform.Fill_Form(url, contact_person, contact_number, street, email, city, loanNumber, state, zip, inspectionDateTime, InspectorName, Summary)
-    if(res == "completed"):
-        res = jotform.Submit()
-        time.sleep(5)
-        if(res == "submitted"):
-            return "Data Submitted"
-    else:
-        return "Failed to Input Data"
-	    
-@app.post('/jotform-preview')
-async def fillForm_preview(form_data: JotForm):
-    # Fetch Data
-    url  = form_data.url
-    contact_person = form_data.contact_person
-    contact_number = form_data.contact_number
-    street = form_data.street
-    email  = form_data.email
-    city = form_data.email
-    loanNumber = form_data.loanNumber
-    state = form_data.state
-    zip = form_data.zip
-    inspectionDateTime = form_data.inspectionDateTime
-    InspectorName = form_data.InspectorName
-    Summary  = form_data.Summary
+def Fill_Form(url, contact_person, contact_number, street, email, city, loanNumber, state, zip, inspectionDateTime, InspectorName, Summary):
+    browser.get(url)
+    browser.implicitly_wait(15)
     try:
-        Summary = re.sub("(\<space>+)|(\Summary:+)", "\n", Summary)
-    except Exception:
-         pass
+        try:
+            StartFill_btn = browser.find_element(By.CLASS_NAME, "js-pdfStartFilling")
+            StartFill_btn.click()
+            browser.implicitly_wait(15)
+        except NoSuchElementException:
+            pass
+        browser.find_element(By.ID, "input_2").send_keys(contact_person)
+        browser.find_element(By.ID, "input_3").send_keys(contact_number)
+        browser.find_element(By.ID, "input_4").send_keys(street)
+        browser.find_element(By.ID, "input_5").send_keys(email)
+        browser.find_element(By.ID, "input_6").send_keys(city)
+        browser.find_element(By.ID, "input_7").send_keys(loanNumber)
+        browser.find_element(By.ID, "input_8").send_keys(state)
+        browser.find_element(By.ID, "input_9").send_keys(zip)
+        browser.find_element(By.ID, "lite_mode_10").send_keys(inspectionDateTime)
+        browser.find_element(By.ID, "input_14").send_keys(InspectorName)
+        browser.find_element(By.ID, "input_11").send_keys(Summary)
 
-    # Send Crawler to perform input on fields
-    res = jotform.Fill_Form(url, contact_person, contact_number, street, email, city, loanNumber, state, zip, inspectionDateTime, InspectorName, Summary)
-    if(res == "completed"):
-        res = jotform.Preview()
-        time.sleep(5)
-        if(res == "completed"):
-            return "Data Previewed"
-    else:
-        return "Failed to Input Data"
-	    
-if __name__ == "__main__":
-	uvicorn.run(app, host='0.0.0.0', port=os.environ.get('PORT', '5000'))
+        #Scroll down to find the Buttons
+        browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        return "completed"
+
+    except NoSuchElementException:
+        return "failed"
+
+def Preview():
+     # Perform Preview Mode
+    Preview_PDF = browser.find_element(By.ID, "input_preview_12")
+    Preview_PDF.click()
+    browser.implicitly_wait(25)
+    try:
+        time.sleep(10)
+        image = browser.find_element(By.CLASS_NAME, 'react-pdf__Page__canvas');
+        canvas_64 = browser.execute_script("return arguments[0].toDataURL('image/png').substring(22);", image)
+        # decode
+        decode = base64.b64decode(canvas_64)
+        with open(r"canvas.png", "wb") as f:
+            f.write(decode)
+        return canvas_64
+    except NoSuchElementException:
+        print("Element is not found")
+        browser.quit()
+        return 'failed'
+
+def Submit():
+    try: 
+        Preview_PDF = browser.find_element(By.ID, "input_12")
+        Preview_PDF.click()
+        return "submitted"
+        browser.quit()
+    except Exception:
+        browser.quit()
+        return "failed"
