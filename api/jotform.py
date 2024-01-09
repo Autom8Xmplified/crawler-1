@@ -31,7 +31,7 @@ def Fill_Form(url, contact_person, contact_number, street, email, city, loanNumb
         browser.find_element(By.ID, "input_7").send_keys(loanNumber)
         browser.find_element(By.ID, "input_8").send_keys(state)
         browser.find_element(By.ID, "input_9").send_keys(zip)
-        browser.find_element(By.ID, "lite_mode_10").send_keys(inspectionDateTime)
+        browser.find_element(By.ID, "input_18").send_keys(inspectionDateTime)
         browser.find_element(By.ID, "input_14").send_keys(InspectorName)
         browser.find_element(By.ID, "input_11").send_keys(Summary)
 
