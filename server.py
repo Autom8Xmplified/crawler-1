@@ -73,7 +73,7 @@ async def fillForm(form_data: JotForm):
     InspectorName = form_data.InspectorName
     Summary  = form_data.Summary
     try:
-        Summary = re.sub(r"(\<space>+)|(\Summary:+)", "\n", Summary)
+        Summary = re.sub(r"(\<space>+)|(\Summary:+)", "\n ", Summary)
     except Exception:
          pass
     # Send Crawler to perform input on fields
