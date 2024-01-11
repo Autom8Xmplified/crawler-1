@@ -65,7 +65,7 @@ async def fillForm(form_data: JotForm):
     contact_number = form_data.contact_number
     street = form_data.street
     email  = form_data.email
-    city = form_data.email
+    city = form_data.city
     loanNumber = form_data.loanNumber
     state = form_data.state
     zip = form_data.zip
